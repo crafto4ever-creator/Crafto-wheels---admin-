@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>খতিয়ান — ব্যবসার হিসাব</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#132521; --ink-soft:#2c443e; --paper:#f6f2e9; --paper-raised:#fffdf8;
+    --line:#d9cfb8; --brass:#a8752c; --brass-deep:#8a5f22; --teal:#1f5c52;
+    --teal-deep:#123f38; --red:#8c3a2b; --green:#2f6b45;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Hind Siliguri', sans-serif; -webkit-font-smoothing:antialiased; }
+  .money,.num{ font-variant-numeric: tabular-nums; }
+  h1,h2,h3,.serif{ font-family:'Tiro Bangla', serif; font-weight:400; }
+  .app{ display:flex; min-height:100vh; }
+  .sidebar{ width:225px; flex-shrink:0; background:var(--teal-deep); color:#e9e2cf; padding:28px 0; display:flex; flex-direction:column; }
+  .brand{ padding:0 22px 22px 22px; border-bottom:1px solid rgba(233,226,207,0.15); margin-bottom:14px; }
+  .brand h1{ font-size:26px; margin:0; color:#f2ead2; }
+  .brand p{ margin:4px 0 0; font-size:12px; color:#a9c4bd; }
+  .nav{ display:flex; flex-direction:column; gap:2px; padding:0 12px; overflow-y:auto; }
+  .nav button{ all:unset; cursor:pointer; padding:10px 14px; border-radius:6px; font-size:14.5px; color:#cfe3dd; display:flex; align-items:center; gap:10px; }
+  .nav button:hover{ background:rgba(233,226,207,0.08); }
+  .nav button.active{ background:#f2ead2; color:var(--teal-deep); font-weight:600; }
+  .nav .dot{ width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.6; flex-shrink:0;}
+  .main{ flex:1; padding:34px 40px 60px; max-width:1140px; }
+  .page-head{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:24px; border-bottom:2px solid var(--ink); padding-bottom:14px; flex-wrap:wrap; gap:10px;}
+  .page-head h2{ font-size:28px; margin:0; }
+  .page-head .sub{ color:var(--ink-soft); font-size:13.5px; margin-top:4px;}
+  .card{ background:var(--paper-raised); border:1px solid var(--line); border-radius:4px; padding:20px 22px; margin-bottom:20px; }
+  .card h3{ font-size:18px; margin:0 0 14px; color:var(--teal-deep); }
+  .grid-stats{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:12px; margin-bottom:22px; }
+  .stat{ background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--brass); padding:14px 16px; border-radius:3px; }
+  .stat.teal{ border-left-color:var(--teal); } .stat.green{ border-left-color:var(--green); } .stat.red{ border-left-color:var(--red); }
+  .stat .label{ font-size:12px; color:var(--ink-soft); margin-bottom:6px;}
+  .stat .value{ font-size:21px; font-weight:600; }
+  form{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+  .field{ display:flex; flex-direction:column; gap:5px; flex:1; min-width:125px; }
+  .field label{ font-size:12.5px; color:var(--ink-soft); }
+  input, select{ font-family:'Hind Siliguri',sans-serif; font-size:14.5px; padding:9px 10px; border:1px solid var(--line); border-radius:4px; background:#fff; color:var(--ink); width:100%; }
+  input:focus, select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .btn{ all:unset; cursor:pointer; background:var(--teal); color:#fff; padding:10px 20px; border-radius:4px; font-size:14.5px; font-weight:600; text-align:center; }
+  .btn:hover{ background:var(--teal-deep); }
+  .btn.brass{ background:var(--brass); } .btn.brass:hover{ background:var(--brass-deep); }
+  .btn.small{ padding:7px 13px; font-size:13px; }
+  .btn.ghost{ background:transparent; color:var(--red); padding:6px 10px; font-weight:500; font-size:13px; }
+  .btn.ghost:hover{ text-decoration:underline; }
+  table{ width:100%; border-collapse:collapse; margin-top:6px; font-size:14px; }
+  th{ text-align:right; font-size:11.5px; color:var(--ink-soft); border-bottom:1px solid var(--ink); padding:8px 6px; font-weight:600; }
+  th:first-child, td:first-child{ text-align:right; }
+  td{ padding:9px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  .muted{ color:var(--ink-soft); font-size:12.5px;}
+  .empty{ padding:26px 10px; text-align:center; color:var(--ink-soft); font-size:14px; border:1px dashed var(--line); border-radius:4px; }
+  .tag{ display:inline-block; font-size:11.5px; padding:2px 8px; border-radius:10px; background:rgba(31,92,82,0.1); color:var(--teal-deep); }
+  .tag.warn{ background:rgba(140,58,43,0.1); color:var(--red); }
+  .product-block{ border:1px solid var(--line); border-radius:4px; margin-bottom:16px; overflow:hidden; }
+  .product-head{ background:#efe8d6; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .product-head .name{ font-size:16px; font-weight:600; }
+  .product-body{ padding:14px 16px; }
+  .cost-line{ display:flex; justify-content:space-between; font-size:13.5px; padding:3px 0; color:var(--ink-soft); }
+  .cost-line b{ color:var(--ink); font-weight:600;}
+  .divider{ height:1px; background:var(--line); margin:10px 0; }
+  .section-note{ font-size:13px; color:var(--ink-soft); margin-bottom:14px; line-height:1.65;}
+  .pill-toggle{ display:flex; gap:6px; margin-bottom:14px;}
+  .pill-toggle button{ all:unset; cursor:pointer; padding:7px 16px; border-radius:20px; font-size:13.5px; border:1px solid var(--line); color:var(--ink-soft); }
+  .pill-toggle button.active{ background:var(--teal); color:#fff; border-color:var(--teal); }
+  .result-box{ margin-top:16px; background:#efe8d6; border:1px solid var(--line); border-radius:4px; padding:16px 18px; }
+  .result-box .big{ font-size:28px; font-weight:600; color:var(--teal-deep); }
+  .exp-row{ display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .exp-row input{ flex:1; }
+  .exp-row button{ all:unset; cursor:pointer; color:var(--red); font-size:18px; padding:0 6px; }
+  .flow-cols{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:12px;}
+  @media (max-width:700px){ .flow-cols{ grid-template-columns:1fr; } }
+  .flow-list{ font-size:13px; }
+  .flow-list li{ display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px dashed var(--line); }
+  .flow-list{ list-style:none; padding:0; margin:0; }
+  .settle-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:14px;}
+  @media (max-width:700px){ .settle-grid{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:820px){
+    .app{ flex-direction:column; } .sidebar{ width:100%; flex-direction:row; overflow-x:auto; padding:14px 10px;}
+    .brand{ display:none; } .nav{ flex-direction:row; padding:0; } .main{ padding:22px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand"><h1>খতিয়ান</h1><p>ব্যবসার সম্পূর্ণ হিসাব</p></div>
+    <div class="nav" id="nav">
+      <button data-page="dashboard"><span class="dot"></span> ড্যাশবোর্ড</button>
+      <button data-page="products"><span class="dot"></span> প্রোডাক্ট তালিকা</button>
+      <button data-page="lots"><span class="dot"></span> শিপমেন্ট / লট</button>
+      <button data-page="sales"><span class="dot"></span> বিক্রয়</button>
+      <button data-page="reinvest"><span class="dot"></span> রি-ইনভেস্টমেন্ট</button>
+      <button data-page="flow"><span class="dot"></span> প্রোডাক্ট ফ্লো রিপোর্ট</button>
+      <button data-page="settlement"><span class="dot"></span> মাসিক মুনাফা বণ্টন</button>
+      <button data-page="investors"><span class="dot"></span> বিনিয়োগকারী</button>
+      <button data-page="calculator"><span class="dot"></span> মূল্য নির্ধারণ</button>
+    </div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+// ================= STATE =================
+let DATA = {
+  products: [],   // {id, code, name, status, note}
+  lots: [],       // {id, productId, label, date, qty, unitCost, expenses:[{name,amount}]}
+  sales: [],      // {id, productId, qty, unitPrice, date}
+  reinvest: [],   // {id, sourceProductId('GENERAL'|pid), destProductId('GENERAL'|pid), amount, date, note}
+  investors: [],  // {id,name,amount,date,note}
+  settlements: [] // {id, month, gross, empPct,f1Pct,f2Pct,reinvestPct, empAmt,f1Amt,f2Amt,reinvestAmt, targetProductId, date}
+};
+let PAGE = 'dashboard';
+const STORE_KEY = 'business-data-v2';
+const GENERAL = 'GENERAL';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function fmt(n){ n = Number(n)||0; return '৳' + n.toLocaleString('en-BD', {maximumFractionDigits:2}); }
+function fmtDate(d){ if(!d) return '—'; try{ return new Date(d).toLocaleDateString('bn-BD', {year:'numeric',month:'short',day:'numeric'}); }catch(e){ return d; } }
+
+async function loadData(){
+  try{
+    const res = await window.storage.get(STORE_KEY, false);
+    if(res && res.value){ DATA = Object.assign(DATA, JSON.parse(res.value)); }
+  }catch(e){ /* no data yet */ }
+  render();
+}
+async function saveData(){
+  try{ await window.storage.set(STORE_KEY, JSON.stringify(DATA), false); }
+  catch(e){ console.error('সংরক্ষণ ব্যর্থ', e); }
+}
+
+// ================= DERIVED CALCS =================
+function productLabel(id){
+  if(id===GENERAL) return 'সাধারণ পুল / মূলধন';
+  const p = DATA.products.find(x=>x.id===id);
+  return p ? `${p.code} — ${p.name}` : '(মুছে ফেলা হয়েছে)';
+}
+function lotTotalCost(lot){
+  const base = (Number(lot.qty)||0)*(Number(lot.unitCost)||0);
+  const extra = (lot.expenses||[]).reduce((s,e)=>s+(Number(e.amount)||0),0);
+  return base+extra;
+}
+function productLots(pid){ return DATA.lots.filter(l=>l.productId===pid); }
+function productInvested(pid){ return productLots(pid).reduce((s,l)=>s+lotTotalCost(l),0); }
+function productQtyPurchased(pid){ return productLots(pid).reduce((s,l)=>s+(Number(l.qty)||0),0); }
+function avgLandedCost(pid){
+  const totalCost = productInvested(pid);
+  const qty = productQtyPurchased(pid);
+  return qty>0 ? totalCost/qty : 0;
+}
+function productSales(pid){ return DATA.sales.filter(s=>s.productId===pid); }
+function productRevenue(pid){ return productSales(pid).reduce((s,sale)=>s+sale.qty*sale.unitPrice,0); }
+function productCOGS(pid){ const alc = avgLandedCost(pid); return productSales(pid).reduce((s,sale)=>s+sale.qty*alc,0); }
+function productProfit(pid){ return productRevenue(pid)-productInvested(pid); }
+function reinvestIn(pid){ return DATA.reinvest.filter(r=>r.destProductId===pid); }
+function reinvestOut(pid){ return DATA.reinvest.filter(r=>r.sourceProductId===pid); }
+function allTotals(){
+  const totalInvested = DATA.investors.reduce((s,i)=>s+Number(i.amount||0),0);
+  const totalLotCost = DATA.lots.reduce((s,l)=>s+lotTotalCost(l),0);
+  const totalRevenue = DATA.sales.reduce((s,sa)=>s+sa.qty*sa.unitPrice,0);
+  const totalCOGS = totalLotCost;
+  const totalProfit = totalRevenue-totalLotCost;
+  const totalWithdrawn = DATA.settlements.reduce((s,st)=>s+Number(st.empAmt||0)+Number(st.f1Amt||0)+Number(st.f2Amt||0),0);
+  const cashPosition = totalInvested+totalRevenue-totalLotCost-totalWithdrawn;
+  return {totalInvested,totalLotCost,totalRevenue,totalCOGS,totalProfit,totalWithdrawn,cashPosition};
+}
+function activeProducts(){ return DATA.products; }
+function productOptionsHtml(includeGeneral, generalLabel){
+  let html = includeGeneral ? `<option value="${GENERAL}">${generalLabel||'সাধারণ পুল / মূলধন'}</option>` : '';
+  html += DATA.products.map(p=>`<option value="${p.id}">${p.code} — ${p.name}</option>`).join('');
+  return html;
+}
+
+// ================= RENDER ROUTER =================
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=> b.classList.toggle('active', b.dataset.page===PAGE));
+  const main = document.getElementById('main');
+  const pages = {dashboard:pageDashboard, products:pageProducts, lots:pageLots, sales:pageSales,
+    reinvest:pageReinvest, flow:pageFlow, settlement:pageSettlement, investors:pageInvestors, calculator:pageCalculator};
+  main.innerHTML = pages[PAGE] ? pages[PAGE]() : '';
+  attachHandlers();
+}
+
+// ================= DASHBOARD =================
+function pageDashboard(){
+  const t = allTotals();
+  const rows = DATA.products.map(p=>{
+    const inv = productInvested(p.id), rev = productRevenue(p.id), profit = productProfit(p.id);
+    return `<tr><td>${p.code} — ${p.name}</td><td class="money">${fmt(inv)}</td><td class="money">${fmt(rev)}</td>
+      <td class="money" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</td></tr>`;
+  }).join('');
+  return `
+  <div class="page-head"><div><h2>ড্যাশবোর্ড</h2><div class="sub">ব্যবসার সার্বিক চিত্র এক নজরে</div></div></div>
+  <div class="grid-stats">
+    <div class="stat"><div class="label">মোট বিনিয়োগ (ফাউন্ডার মূলধন)</div><div class="value money">${fmt(t.totalInvested)}</div></div>
+    <div class="stat teal"><div class="label">মোট ক্রয়/আমদানি খরচ</div><div class="value money">${fmt(t.totalLotCost)}</div></div>
+    <div class="stat green"><div class="label">মোট বিক্রয়</div><div class="value money">${fmt(t.totalRevenue)}</div></div>
+    <div class="stat ${t.totalProfit>=0?'green':'red'}"><div class="label">মোট নীট লাভ</div><div class="value money">${fmt(t.totalProfit)}</div></div>
+    <div class="stat"><div class="label">ফাউন্ডার+এমপ্লয়ী উত্তোলন</div><div class="value money">${fmt(t.totalWithdrawn)}</div></div>
+    <div class="stat teal"><div class="label">বর্তমান ক্যাশ পজিশন</div><div class="value money">${fmt(t.cashPosition)}</div></div>
+  </div>
+  <div class="card">
+    <h3>প্রোডাক্ট অনুযায়ী বিনিয়োগ, বিক্রয় ও লাভ</h3>
+    ${DATA.products.length? `<table><thead><tr><th>প্রোডাক্ট</th><th>বিনিয়োগ</th><th>বিক্রয়</th><th>লাভ</th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">এখনও কোনো প্রোডাক্ট যোগ করা হয়নি — প্রথমে "প্রোডাক্ট তালিকা" পাতায় গিয়ে p1 যোগ করুন।</div>`}
+  </div>`;
+}
+
+// ================= PRODUCTS =================
+function nextCode(){
+  const nums = DATA.products.map(p=>{ const m = p.code.match(/(\d+)/); return m? parseInt(m[1]):0; });
+  const max = nums.length? Math.max(...nums):0;
+  return 'p'+(max+1);
+}
+function pageProducts(){
+  const rows = DATA.products.map(p=>{
+    const inv = productInvested(p.id), profit = productProfit(p.id);
+    return `<tr>
+      <td><b>${p.code}</b></td><td>${p.name}</td>
+      <td><span class="tag ${p.status==='active'?'':'warn'}">${p.status==='active'?'সক্রিয়':'পরীক্ষামূলক'}</span></td>
+      <td class="money">${fmt(inv)}</td>
+      <td class="money" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</td>
+      <td class="muted">${p.note||''}</td>
+      <td><button class="btn ghost" data-action="del-product" data-id="${p.id}">মুছুন</button></td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="page-head"><div><h2>প্রোডাক্ট তালিকা</h2><div class="sub">আপনার ১০টি প্রোডাক্টের মাস্টার তালিকা (p1, p2 ...)</div></div></div>
+  <div class="card">
+    <h3>নতুন প্রোডাক্ট যোগ করুন</h3>
+    <form id="form-product">
+      <div class="field"><label>কোড</label><input required name="code" value="${nextCode()}"></div>
+      <div class="field" style="flex:2"><label>নাম</label><input required name="name" placeholder="যেমন: স্মার্ট ওয়াচ"></div>
+      <div class="field"><label>অবস্থা</label>
+        <select name="status"><option value="active">সক্রিয়</option><option value="testing">পরীক্ষামূলক</option></select>
+      </div>
+      <div class="field" style="flex:2"><label>নোট (ঐচ্ছিক)</label><input name="note" placeholder="বিস্তারিত"></div>
+      <button class="btn" type="submit">যোগ করুন</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>প্রোডাক্টসমূহ</h3>
+    ${DATA.products.length? `<table><thead><tr><th>কোড</th><th>নাম</th><th>অবস্থা</th><th>মোট বিনিয়োগ</th><th>এখন পর্যন্ত লাভ</th><th>নোট</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">এখনও কোনো প্রোডাক্ট যোগ করা হয়নি।</div>`}
+  </div>`;
+}
+
+// ================= LOTS / SHIPMENTS =================
+function pageLots(){
+  if(!DATA.products.length){
+    return `<div class="page-head"><div><h2>শিপমেন্ট / লট</h2></div></div>
+    <div class="empty">লট যোগ করতে আগে "প্রোডাক্ট তালিকা" পাতায় গিয়ে অন্তত একটি প্রোডাক্ট (যেমন p1) যোগ করুন।</div>`;
+  }
+  const blocks = DATA.products.map(p=>{
+    const lots = productLots(p.id);
+    const lotRows = lots.map(l=>{
+      const total = lotTotalCost(l);
+      const perUnit = l.qty>0? total/l.qty : 0;
+      const expList = (l.expenses||[]).map(e=>`<div class="cost-line"><span>${e.name}</span><b class="money">${fmt(e.amount)}</b></div>`).join('');
+      return `<div class="product-block">
+        <div class="product-head">
+          <div class="name">${l.label||'লট'} <span class="muted">— ${fmtDate(l.date)}</span></div>
+          <div><span class="tag money">লট খরচ: ${fmt(total)} | একক: ${fmt(perUnit)}</span>
+          <button class="btn ghost" data-action="del-lot" data-pid="${p.id}" data-id="${l.id}">মুছুন</button></div>
+        </div>
+        <div class="product-body">
+          <div class="cost-line"><span>ক্রয়মূল্য (${l.qty} × ${fmt(l.unitCost)})</span><b class="money">${fmt(l.qty*l.unitCost)}</b></div>
+          ${expList}
+        </div>
+      </div>`;
+    }).join('');
+    const invested = productInvested(p.id), avgCost = avgLandedCost(p.id), qty = productQtyPurchased(p.id);
+    return `
+    <div class="card">
+      <h3>${p.code} — ${p.name} <span class="tag">মোট ক্রয়: ${qty} একক | গড় ল্যান্ডেড কস্ট/একক: ${fmt(avgCost)} | মোট বিনিয়োগ: ${fmt(invested)}</span></h3>
+      ${lotRows || `<div class="empty">এই প্রোডাক্টের এখনও কোনো লট/শিপমেন্ট নেই।</div>`}
+      <div class="divider"></div>
+      <div class="section-note">নতুন লট/শিপমেন্ট যোগ করুন — প্রথমে মূল ক্রয়মূল্য দিন, তারপর যত খুশি আলাদা খরচ (শিপিং, কাস্টমস, প্যাকেজিং, বিজ্ঞাপন ইত্যাদি) নিজের মতো নাম দিয়ে যোগ করতে পারবেন।</div>
+      <form class="form-add-lot" data-pid="${p.id}">
+        <div class="field"><label>লট/চালানের নাম</label><input required name="label" placeholder="যেমন: ২য় চালান"></div>
+        <div class="field"><label>তারিখ</label><input required name="date" type="date"></div>
+        <div class="field"><label>পরিমাণ</label><input required name="qty" type="number" step="1" placeholder="০"></div>
+        <div class="field"><label>ক্রয়মূল্য/একক</label><input required name="unitCost" type="number" step="0.01" placeholder="০"></div>
+        <div style="flex-basis:100%;"></div>
+        <div style="flex:1; min-width:100%;">
+          <label class="muted" style="font-size:12.5px;">অতিরিক্ত খরচসমূহ</label>
+          <div class="exp-rows-container">
+            <div class="exp-row"><input name="expName" placeholder="খরচের নাম (যেমন: শিপিং)"><input name="expAmount" type="number" step="0.01" placeholder="পরিমাণ"><button type="button" class="btn-remove-exp">✕</button></div>
+          </div>
+          <button type="button" class="btn small brass btn-add-exp">+ আরেকটি খরচ যোগ করুন</button>
+        </div>
+        <button class="btn" type="submit">লট যোগ করুন</button>
+      </form>
+    </div>`;
+  }).join('');
+  return `
+  <div class="page-head"><div><h2>শিপমেন্ট / লট</h2><div class="sub">প্রতিটি প্রোডাক্টের বারবার আসা চালান/লট এবং তার ল্যান্ডেড কস্ট</div></div></div>
+  ${blocks}`;
+}
+
+// ================= SALES =================
+function pageSales(){
+  const opts = productOptionsHtml(false);
+  const rows = DATA.sales.slice().sort((a,b)=> (b.date||'').localeCompare(a.date||'')).map(s=>{
+    const alc = avgLandedCost(s.productId);
+    const revenue = s.qty*s.unitPrice, cost = s.qty*alc, profit = revenue-cost;
+    return `<tr>
+      <td>${productLabel(s.productId)}</td><td>${fmtDate(s.date)}</td><td class="num">${s.qty}</td>
+      <td class="money">${fmt(s.unitPrice)}</td><td class="money">${fmt(revenue)}</td>
+      <td class="money" style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</td>
+      <td><button class="btn ghost" data-action="del-sale" data-id="${s.id}">মুছুন</button></td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="page-head"><div><h2>বিক্রয়</h2><div class="sub">কোন প্রোডাক্ট বিক্রি করে কত লাভ হলো (গড় ল্যান্ডেড কস্ট অনুযায়ী)</div></div></div>
+  <div class="card">
+    <h3>বিক্রয় যোগ করুন</h3>
+    ${DATA.products.length? `
+    <form id="form-sale">
+      <div class="field" style="flex:2"><label>প্রোডাক্ট</label><select required name="productId">${opts}</select></div>
+      <div class="field"><label>পরিমাণ</label><input required name="qty" type="number" step="1" placeholder="০"></div>
+      <div class="field"><label>বিক্রয়মূল্য/একক</label><input required name="unitPrice" type="number" step="0.01" placeholder="০"></div>
+      <div class="field"><label>তারিখ</label><input required name="date" type="date"></div>
+      <button class="btn" type="submit">যোগ করুন</button>
+    </form>` : `<div class="empty">আগে প্রোডাক্ট যোগ করুন।</div>`}
+  </div>
+  <div class="card">
+    <h3>বিক্রয়ের তালিকা</h3>
+    ${DATA.sales.length? `<table><thead><tr><th>প্রোডাক্ট</th><th>তারিখ</th><th>পরিমাণ</th><th>একক মূল্য</th><th>মোট বিক্রয়</th><th>লাভ</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">এখনও কোনো বিক্রয় যোগ করা হয়নি।</div>`}
+  </div>`;
+}
+
+// ================= REINVEST =================
+function pageReinvest(){
+  const srcOpts = productOptionsHtml(true, 'সাধারণ পুল / ফাউন্ডার মূলধন');
+  const dstOpts = productOptionsHtml(true, 'সাধারণ ব্যবসায়িক পুঁজি');
+  const rows = DATA.reinvest.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(r=>`
+    <tr>
+      <td>${productLabel(r.sourceProductId)}</td>
+      <td>→</td>
+      <td>${productLabel(r.destProductId)}</td>
+      <td class="money">${fmt(r.amount)}</td>
+      <td>${fmtDate(r.date)}</td>
+      <td class="muted">${r.note||''}</td>
+      <td><button class="btn ghost" data-action="del-reinvest" data-id="${r.id}">মুছুন</button></td>
+    </tr>`).join('');
+  return `
+  <div class="page-head"><div><h2>রি-ইনভেস্টমেন্ট</h2><div class="sub">এক প্রোডাক্টের লাভ আরেক প্রোডাক্টে (বা সাধারণ পুঁজিতে) কীভাবে গেল তার হিসাব — যেমন p1-এর লাভ থেকে p1-এই আবার শিপমেন্ট, বা p1-এর লাভ দিয়ে p2 চালু</div></div></div>
+  <div class="card">
+    <h3>নতুন রি-ইনভেস্টমেন্ট যোগ করুন</h3>
+    <form id="form-reinvest">
+      <div class="field"><label>উৎস (কোথা থেকে টাকা এলো)</label><select required name="sourceProductId">${srcOpts}</select></div>
+      <div class="field"><label>গন্তব্য (কোথায় ইনভেস্ট হলো)</label><select required name="destProductId">${dstOpts}</select></div>
+      <div class="field"><label>পরিমাণ</label><input required name="amount" type="number" step="0.01" placeholder="০"></div>
+      <div class="field"><label>তারিখ</label><input required name="date" type="date"></div>
+      <div class="field" style="flex:2"><label>নোট (ঐচ্ছিক)</label><input name="note" placeholder="বিস্তারিত"></div>
+      <button class="btn" type="submit">যোগ করুন</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>রি-ইনভেস্টমেন্টের তালিকা</h3>
+    ${DATA.reinvest.length? `<table><thead><tr><th>উৎস</th><th></th><th>গন্তব্য</th><th>পরিমাণ</th><th>তারিখ</th><th>নোট</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">এখনও কোনো রি-ইনভেস্টমেন্ট যোগ করা হয়নি।</div>`}
+  </div>`;
+}
+
+// ================= PRODUCT FLOW REPORT =================
+function pageFlow(){
+  if(!DATA.products.length){
+    return `<div class="page-head"><div><h2>প্রোডাক্ট ফ্লো রিপোর্ট</h2></div></div><div class="empty">আগে প্রোডাক্ট যোগ করুন।</div>`;
+  }
+  const blocks = DATA.products.map(p=>{
+    const inv = productInvested(p.id), rev = productRevenue(p.id), profit = productProfit(p.id);
+    const inList = reinvestIn(p.id).map(r=>`<li><span>${productLabel(r.sourceProductId)}</span><b class="money">${fmt(r.amount)}</b></li>`).join('') || '<li class="muted">কিছু নেই</li>';
+    const outList = reinvestOut(p.id).map(r=>`<li><span>${productLabel(r.destProductId)}</span><b class="money">${fmt(r.amount)}</b></li>`).join('') || '<li class="muted">কিছু নেই</li>';
+    return `<div class="card">
+      <h3>${p.code} — ${p.name}</h3>
+      <div class="grid-stats" style="margin-bottom:8px;">
+        <div class="stat"><div class="label">মোট বিনিয়োগ</div><div class="value money">${fmt(inv)}</div></div>
+        <div class="stat green"><div class="label">মোট বিক্রয়</div><div class="value money">${fmt(rev)}</div></div>
+        <div class="stat ${profit>=0?'green':'red'}"><div class="label">মোট লাভ</div><div class="value money">${fmt(profit)}</div></div>
+      </div>
+      <div class="flow-cols">
+        <div><h3 style="font-size:14.5px;">এই প্রোডাক্টে যেসব উৎস থেকে টাকা এসেছে</h3><ul class="flow-list">${inList}</ul></div>
+        <div><h3 style="font-size:14.5px;">এই প্রোডাক্টের লাভ থেকে যেখানে টাকা গেছে</h3><ul class="flow-list">${outList}</ul></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+  <div class="page-head"><div><h2>প্রোডাক্ট ফ্লো রিপোর্ট</h2><div class="sub">কোন প্রোডাক্টে কত বিনিয়োগ, কত আয়, এবং সেই আয় আবার কোথায় গেল</div></div></div>
+  ${blocks}`;
+}
+
+// ================= SETTLEMENT (Monthly profit distribution) =================
+function monthProfit(month){
+  let gross = 0;
+  DATA.sales.forEach(s=>{
+    if((s.date||'').slice(0,7)===month){
+      const alc = avgLandedCost(s.productId);
+      gross += s.qty*s.unitPrice - s.qty*alc;
+    }
+  });
+  return gross;
+}
+function pageSettlement(){
+  const rows = DATA.settlements.slice().sort((a,b)=>b.month.localeCompare(a.month)).map(st=>`
+    <tr>
+      <td>${st.month}</td>
+      <td class="money">${fmt(st.gross)}</td>
+      <td class="money">${fmt(st.reinvestAmt)} <span class="muted">(${st.reinvestPct}%)</span></td>
+      <td class="money">${fmt(st.empAmt)} <span class="muted">(${st.empPct}%)</span></td>
+      <td class="money">${fmt(st.f1Amt)} <span class="muted">(${st.f1Pct}%)</span></td>
+      <td class="money">${fmt(st.f2Amt)} <span class="muted">(${st.f2Pct}%)</span></td>
+      <td>${productLabel(st.targetProductId)}</td>
+      <td><button class="btn ghost" data-action="del-settlement" data-id="${st.id}">মুছুন</button></td>
+    </tr>`).join('');
+  const dstOpts = productOptionsHtml(true, 'সাধারণ ব্যবসায়িক পুঁজি');
+  return `
+  <div class="page-head"><div><h2>মাসিক মুনাফা বণ্টন</h2><div class="sub">প্রতি মাস শেষে নীট লাভ থেকে ৭০% ব্যবসায় রি-ইনভেস্ট, ১০% এমপ্লয়ী, ১০%+১০% দুই ফাউন্ডার</div></div></div>
+  <div class="card">
+    <h3>একটি মাসের হিসাব করুন</h3>
+    <form id="form-calc-month">
+      <div class="field"><label>মাস বাছাই করুন</label><input required type="month" name="month" id="settle-month"></div>
+    </form>
+    <div id="settle-preview"></div>
+  </div>
+  <div class="card">
+    <h3>বণ্টনের ইতিহাস</h3>
+    ${DATA.settlements.length? `<table><thead><tr><th>মাস</th><th>নীট লাভ</th><th>রি-ইনভেস্ট</th><th>এমপ্লয়ী</th><th>ফাউন্ডার ১</th><th>ফাউন্ডার ২</th><th>রি-ইনভেস্ট লক্ষ্য</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">এখনও কোনো মাসিক বণ্টন সংরক্ষণ করা হয়নি।</div>`}
+  </div>`;
+}
+function renderSettlePreview(){
+  const monthInput = document.getElementById('settle-month');
+  const box = document.getElementById('settle-preview');
+  if(!monthInput || !monthInput.value){ box.innerHTML=''; return; }
+  const month = monthInput.value;
+  const gross = monthProfit(month);
+  const already = DATA.settlements.find(s=>s.month===month);
+  const dstOpts = productOptionsHtml(true, 'সাধারণ ব্যবসায়িক পুঁজি');
+  box.innerHTML = `
+    <div class="settle-grid">
+      <div class="field"><label>রি-ইনভেস্ট %</label><input type="number" step="0.1" id="pct-reinvest" value="70"></div>
+      <div class="field"><label>এমপ্লয়ী %</label><input type="number" step="0.1" id="pct-emp" value="10"></div>
+      <div class="field"><label>ফাউন্ডার ১ %</label><input type="number" step="0.1" id="pct-f1" value="10"></div>
+      <div class="field"><label>ফাউন্ডার ২ %</label><input type="number" step="0.1" id="pct-f2" value="10"></div>
+    </div>
+    <div class="field" style="margin-top:10px; max-width:320px;"><label>রি-ইনভেস্ট করা টাকা কোন প্রোডাক্টের জন্য গণ্য হবে (ঐচ্ছিক)</label><select id="settle-target">${dstOpts}</select></div>
+    <div class="result-box" id="settle-result"></div>
+    ${already? `<div class="muted" style="margin-top:8px;">এই মাসের জন্য ইতিমধ্যে একটি বণ্টন সংরক্ষিত আছে — আবার সংরক্ষণ করলে নতুন এন্ট্রি যোগ হবে।</div>`:''}
+    <button class="btn brass" id="btn-save-settlement" type="button" style="margin-top:14px;">এই মাসের বণ্টন নিশ্চিত করে সংরক্ষণ করুন</button>
+  `;
+  const recalc = ()=>{
+    const rp = parseFloat(document.getElementById('pct-reinvest').value)||0;
+    const ep = parseFloat(document.getElementById('pct-emp').value)||0;
+    const f1p = parseFloat(document.getElementById('pct-f1').value)||0;
+    const f2p = parseFloat(document.getElementById('pct-f2').value)||0;
+    const reinvestAmt = gross*rp/100, empAmt = gross*ep/100, f1Amt = gross*f1p/100, f2Amt = gross*f2p/100;
+    document.getElementById('settle-result').innerHTML = `
+      <div class="cost-line"><span>মোট নীট লাভ (${month})</span><b class="money">${fmt(gross)}</b></div>
+      <div class="divider"></div>
+      <div class="cost-line"><span>ব্যবসায় রি-ইনভেস্ট (${rp}%)</span><b class="money">${fmt(reinvestAmt)}</b></div>
+      <div class="cost-line"><span>এমপ্লয়ীদের ভাগ (${ep}%)</span><b class="money">${fmt(empAmt)}</b></div>
+      <div class="cost-line"><span>ফাউন্ডার ১-এর ভাগ (${f1p}%)</span><b class="money">${fmt(f1Amt)}</b></div>
+      <div class="cost-line"><span>ফাউন্ডার ২-এর ভাগ (${f2p}%)</span><b class="money">${fmt(f2Amt)}</b></div>
+    `;
+  };
+  ['pct-reinvest','pct-emp','pct-f1','pct-f2'].forEach(id=> document.getElementById(id).oninput = recalc);
+  recalc();
+  document.getElementById('btn-save-settlement').onclick = ()=>{
+    const rp = parseFloat(document.getElementById('pct-reinvest').value)||0;
+    const ep = parseFloat(document.getElementById('pct-emp').value)||0;
+    const f1p = parseFloat(document.getElementById('pct-f1').value)||0;
+    const f2p = parseFloat(document.getElementById('pct-f2').value)||0;
+    const target = document.getElementById('settle-target').value;
+    const reinvestAmt = gross*rp/100, empAmt = gross*ep/100, f1Amt = gross*f1p/100, f2Amt = gross*f2p/100;
+    DATA.settlements.push({id:uid(), month, gross, empPct:ep, f1Pct:f1p, f2Pct:f2p, reinvestPct:rp,
+      empAmt, f1Amt, f2Amt, reinvestAmt, targetProductId:target, date:new Date().toISOString().slice(0,10)});
+    DATA.reinvest.push({id:uid(), sourceProductId:GENERAL, destProductId:target, amount:reinvestAmt, date:new Date().toISOString().slice(0,10), note:`${month} মাসের মুনাফা থেকে রি-ইনভেস্ট`});
+    saveData(); render();
+  };
+}
+
+// ================= INVESTORS =================
+function pageInvestors(){
+  const rows = DATA.investors.map(inv=>`
+    <tr><td>${inv.name}</td><td class="money">${fmt(inv.amount)}</td><td>${fmtDate(inv.date)}</td><td class="muted">${inv.note||''}</td>
+    <td><button class="btn ghost" data-action="del-investor" data-id="${inv.id}">মুছুন</button></td></tr>`).join('');
+  const total = DATA.investors.reduce((s,i)=>s+Number(i.amount||0),0);
+  return `
+  <div class="page-head"><div><h2>বিনিয়োগকারী</h2><div class="sub">কে কত টাকা মূলধন দিয়েছেন তার তালিকা</div></div></div>
+  <div class="card">
+    <h3>নতুন বিনিয়োগ যোগ করুন</h3>
+    <form id="form-investor">
+      <div class="field"><label>নাম</label><input required name="name" placeholder="যেমন: রহিম সাহেব"></div>
+      <div class="field"><label>টাকার পরিমাণ</label><input required name="amount" type="number" step="0.01" placeholder="০"></div>
+      <div class="field"><label>তারিখ</label><input required name="date" type="date"></div>
+      <div class="field" style="flex:2;"><label>নোট (ঐচ্ছিক)</label><input name="note" placeholder="বিস্তারিত"></div>
+      <button class="btn" type="submit">যোগ করুন</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>বিনিয়োগকারীর তালিকা <span class="tag money">মোট: ${fmt(total)}</span></h3>
+    ${DATA.investors.length? `<table><thead><tr><th>নাম</th><th>পরিমাণ</th><th>তারিখ</th><th>নোট</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">এখনও কোনো বিনিয়োগকারী যোগ করা হয়নি।</div>`}
+  </div>`;
+}
+
+// ================= PRICE CALCULATOR =================
+let CALC_MODE = 'margin';
+function pageCalculator(){
+  const opts = productOptionsHtml(false);
+  return `
+  <div class="page-head"><div><h2>মূল্য নির্ধারণ ক্যালকুলেটর</h2><div class="sub">কাঙ্ক্ষিত লাভ পেতে কোন প্রোডাক্ট কত দামে বিক্রি করা উচিত (গড় ল্যান্ডেড কস্ট অনুযায়ী)</div></div></div>
+  <div class="card">
+    ${DATA.products.length? `
+    <form id="form-calc">
+      <div class="field" style="flex:2"><label>প্রোডাক্ট বাছাই করুন</label><select required name="productId">${opts}</select></div>
+      <div class="field"><label>কাঙ্ক্ষিত লাভ (%)</label><input required name="percent" type="number" step="0.1" placeholder="যেমন: ৩০"></div>
+    </form>
+    <div class="pill-toggle">
+      <button type="button" data-mode="margin" class="${CALC_MODE==='margin'?'active':''}">বিক্রয়মূল্যের উপর লাভ %</button>
+      <button type="button" data-mode="markup" class="${CALC_MODE==='markup'?'active':''}">ক্রয়মূল্যের উপর লাভ %</button>
+    </div>
+    <div id="calc-result"></div>` : `<div class="empty">আগে প্রোডাক্ট যোগ করুন।</div>`}
+  </div>`;
+}
+function runCalc(){
+  const form = document.getElementById('form-calc');
+  if(!form) return;
+  const pid = form.productId.value, percent = parseFloat(form.percent.value);
+  const box = document.getElementById('calc-result');
+  if(!pid || isNaN(percent)){ box.innerHTML=''; return; }
+  const landed = avgLandedCost(pid);
+  let price;
+  if(CALC_MODE==='margin'){
+    if(percent>=100){ box.innerHTML = `<div class="empty">লাভের % ১০০ এর কম হতে হবে।</div>`; return; }
+    price = landed/(1-percent/100);
+  } else { price = landed*(1+percent/100); }
+  const profitPerUnit = price-landed;
+  box.innerHTML = `<div class="result-box">
+    <div class="cost-line"><span>গড় ল্যান্ডেড কস্ট/একক</span><b class="money">${fmt(landed)}</b></div>
+    <div class="cost-line"><span>প্রতি এককে লাভ</span><b class="money">${fmt(profitPerUnit)}</b></div>
+    <div class="divider"></div><div class="muted">প্রস্তাবিত বিক্রয়মূল্য</div><div class="big money">${fmt(price)}</div>
+  </div>`;
+}
+
+// ================= EVENT HANDLERS =================
+function attachHandlers(){
+  document.querySelectorAll('#nav button').forEach(b=> b.onclick = ()=>{ PAGE=b.dataset.page; render(); });
+
+  const fp = document.getElementById('form-product');
+  if(fp) fp.onsubmit = e=>{
+    e.preventDefault(); const fd = new FormData(fp);
+    DATA.products.push({id:uid(), code:fd.get('code'), name:fd.get('name'), status:fd.get('status'), note:fd.get('note')});
+    saveData(); render();
+  };
+
+  document.querySelectorAll('.form-add-lot').forEach(form=>{
+    // dynamic expense rows
+    const container = form.querySelector('.exp-rows-container');
+    form.querySelector('.btn-add-exp').onclick = ()=>{
+      const row = document.createElement('div'); row.className='exp-row';
+      row.innerHTML = `<input name="expName" placeholder="খরচের নাম"><input name="expAmount" type="number" step="0.01" placeholder="পরিমাণ"><button type="button" class="btn-remove-exp">✕</button>`;
+      row.querySelector('.btn-remove-exp').onclick = ()=> row.remove();
+      container.appendChild(row);
+    };
+    container.querySelectorAll('.btn-remove-exp').forEach(b=> b.onclick = ()=> b.closest('.exp-row').remove());
+    form.onsubmit = e=>{
+      e.preventDefault();
+      const pid = form.dataset.pid;
+      const fd = new FormData(form);
+      const names = fd.getAll('expName'), amounts = fd.getAll('expAmount');
+      const expenses = [];
+      names.forEach((n,i)=>{ if(n && n.trim()) expenses.push({name:n.trim(), amount:parseFloat(amounts[i])||0}); });
+      DATA.lots.push({id:uid(), productId:pid, label:fd.get('label'), date:fd.get('date'),
+        qty:parseFloat(fd.get('qty')), unitCost:parseFloat(fd.get('unitCost')), expenses});
+      saveData(); render();
+    };
+  });
+
+  const fsale = document.getElementById('form-sale');
+  if(fsale) fsale.onsubmit = e=>{
+    e.preventDefault(); const fd = new FormData(fsale);
+    DATA.sales.push({id:uid(), productId:fd.get('productId'), qty:parseFloat(fd.get('qty')), unitPrice:parseFloat(fd.get('unitPrice')), date:fd.get('date')});
+    saveData(); render();
+  };
+
+  const fr = document.getElementById('form-reinvest');
+  if(fr) fr.onsubmit = e=>{
+    e.preventDefault(); const fd = new FormData(fr);
+    DATA.reinvest.push({id:uid(), sourceProductId:fd.get('sourceProductId'), destProductId:fd.get('destProductId'),
+      amount:parseFloat(fd.get('amount')), date:fd.get('date'), note:fd.get('note')});
+    saveData(); render();
+  };
+
+  const fi = document.getElementById('form-investor');
+  if(fi) fi.onsubmit = e=>{
+    e.preventDefault(); const fd = new FormData(fi);
+    DATA.investors.push({id:uid(), name:fd.get('name'), amount:parseFloat(fd.get('amount')), date:fd.get('date'), note:fd.get('note')});
+    saveData(); render();
+  };
+
+  const fcm = document.getElementById('form-calc-month');
+  if(fcm){ document.getElementById('settle-month').onchange = renderSettlePreview; }
+
+  const fc = document.getElementById('form-calc');
+  if(fc){ fc.oninput = runCalc; fc.querySelector('select').onchange = runCalc; runCalc(); }
+  document.querySelectorAll('.pill-toggle button').forEach(b=> b.onclick = ()=>{ CALC_MODE = b.dataset.mode; render(); });
+
+  document.querySelectorAll('[data-action]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const a = btn.dataset.action;
+      if(a==='del-product'){ DATA.products = DATA.products.filter(p=>p.id!==btn.dataset.id); }
+      if(a==='del-lot'){ DATA.lots = DATA.lots.filter(l=>l.id!==btn.dataset.id); }
+      if(a==='del-sale'){ DATA.sales = DATA.sales.filter(s=>s.id!==btn.dataset.id); }
+      if(a==='del-reinvest'){ DATA.reinvest = DATA.reinvest.filter(r=>r.id!==btn.dataset.id); }
+      if(a==='del-investor'){ DATA.investors = DATA.investors.filter(i=>i.id!==btn.dataset.id); }
+      if(a==='del-settlement'){ DATA.settlements = DATA.settlements.filter(s=>s.id!==btn.dataset.id); }
+      saveData(); render();
+    };
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>

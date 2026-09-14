@@ -119,20 +119,74 @@ let PAGE = 'dashboard';
 const STORE_KEY = 'business-data-v2';
 const GENERAL = 'GENERAL';
 
+// ============ শেয়ার্ড (পাবলিক) ডেটাবেজ কনফিগ ============
+// এই অ্যাপটি যদি Claude-এর ভেতরে চলে, তাহলে window.storage ব্যবহার হবে (নিজের জন্য)।
+// কিন্তু GitHub Pages-এ পাবলিশ করলে window.storage কাজ করে না — তখন এই Firebase
+// কনফিগটা ব্যবহার হবে, যাতে আপনি ও আপনার বন্ধু একই ডেটা দেখতে পান।
+// নিচের মানগুলো Firebase কনসোল থেকে কপি করে বসান (নিচে ধাপগুলো লেখা আছে):
+const FIREBASE_CONFIG = {
+  apiKey: "এখানে-আপনার-apiKey-বসান",
+  authDomain: "এখানে-আপনার-authDomain-বসান",
+  projectId: "এখানে-আপনার-projectId-বসান",
+  storageBucket: "এখানে-আপনার-storageBucket-বসান",
+  messagingSenderId: "এখানে-আপনার-messagingSenderId-বসান",
+  appId: "এখানে-আপনার-appId-বসান"
+};
+const USE_FIREBASE = !(window.storage && typeof window.storage.get === 'function');
+let fsDocRef = null;
+
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function fmt(n){ n = Number(n)||0; return '৳' + n.toLocaleString('en-BD', {maximumFractionDigits:2}); }
 function fmtDate(d){ if(!d) return '—'; try{ return new Date(d).toLocaleDateString('bn-BD', {year:'numeric',month:'short',day:'numeric'}); }catch(e){ return d; } }
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script'); s.src=src; s.onload=resolve; s.onerror=reject; document.head.appendChild(s);
+  });
+}
+async function initFirebaseIfNeeded(){
+  if(!USE_FIREBASE) return;
+  if(FIREBASE_CONFIG.apiKey.indexOf('এখানে')===0){
+    document.getElementById('main').innerHTML = `<div class="card"><h3>Firebase কনফিগ বসানো হয়নি</h3>
+      <div class="section-note">এই সাইটটি এখন একাধিক মানুষের সাথে ডেটা শেয়ার করার জন্য Firebase ব্যবহার করে, কিন্তু কোডে এখনো আপনার নিজের Firebase কনফিগ বসানো হয়নি। GitHub-এ index.html ফাইলটি এডিট করে FIREBASE_CONFIG এর মানগুলো বসিয়ে দিন।</div></div>`;
+    return;
+  }
+  await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+  await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js');
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.firestore();
+  fsDocRef = db.collection('business').doc('shared');
+  return new Promise((resolve)=>{
+    let first = true;
+    fsDocRef.onSnapshot(snap=>{
+      if(snap.exists()){ DATA = Object.assign(DATA, snap.data()); }
+      render();
+      if(first){ first=false; resolve(); }
+    }, (err)=>{
+      console.error('Firebase sync error', err);
+      if(first){ first=false; resolve(); }
+    });
+  });
+}
 
 async function loadData(){
-  try{
-    const res = await window.storage.get(STORE_KEY, false);
-    if(res && res.value){ DATA = Object.assign(DATA, JSON.parse(res.value)); }
-  }catch(e){ /* no data yet */ }
-  render();
+  if(USE_FIREBASE){
+    await initFirebaseIfNeeded();
+  } else {
+    try{
+      const res = await window.storage.get(STORE_KEY, false);
+      if(res && res.value){ DATA = Object.assign(DATA, JSON.parse(res.value)); }
+    }catch(e){ /* no data yet */ }
+    render();
+  }
 }
 async function saveData(){
-  try{ await window.storage.set(STORE_KEY, JSON.stringify(DATA), false); }
-  catch(e){ console.error('সংরক্ষণ ব্যর্থ', e); }
+  if(USE_FIREBASE){
+    try{ if(fsDocRef) await fsDocRef.set(DATA); }
+    catch(e){ console.error('সংরক্ষণ ব্যর্থ (Firebase)', e); }
+  } else {
+    try{ await window.storage.set(STORE_KEY, JSON.stringify(DATA), false); }
+    catch(e){ console.error('সংরক্ষণ ব্যর্থ', e); }
+  }
 }
 
 // ================= DERIVED CALCS =================
